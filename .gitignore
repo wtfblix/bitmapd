@@ -1,1 +1,10 @@
+# Rust build artifacts
 /target
+
+# Database files
+resolver.db
+resolver.db-shm
+resolver.db-wal
+*.db
+*.db-shm
+*.db-wal
