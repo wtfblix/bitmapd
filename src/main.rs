@@ -12,7 +12,7 @@ const DB_PATH: &str = "resolver.db";
 
 #[derive(Parser)]
 #[command(name = "bitmapd")]
-#[command(version = "0.1.0")]
+#[command(version)]
 #[command(about = "Bitmap Resolver Daemon")]
 struct Cli {
     #[command(subcommand)]
