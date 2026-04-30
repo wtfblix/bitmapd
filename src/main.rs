@@ -4,6 +4,8 @@ use clap::{Parser, Subcommand};
 use modules::database::Database;
 use modules::ord_client::OrdClient;
 use modules::processor::BlockProcessor;
+use modules::server::run_server;
+use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 
 const GENESIS_BITMAP_BLOCKHEIGHT: u64 = 792435;
@@ -23,6 +25,8 @@ struct Cli {
 enum Commands {
     /// Run the bitmap indexer
     Index,
+    /// Run the API server
+    Serve,
 }
 
 #[tokio::main]
@@ -31,6 +35,10 @@ async fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Index => run_indexer().await?,
+        Commands::Serve => {
+            let db = Arc::new(Database::new(DB_PATH)?);
+            run_server(db).await?;
+        }
     }
 
     Ok(())
@@ -45,7 +53,6 @@ async fn run_indexer() -> anyhow::Result<()> {
     println!("Genesis bitmap blockheight: {}", GENESIS_BITMAP_BLOCKHEIGHT);
 
     loop {
-        // Fetch the REAL current tip from ord before processing each block
         let current_tip = match client.get_block_height().await {
             Ok(tip) => tip,
             Err(err) => {
@@ -63,7 +70,6 @@ async fn run_indexer() -> anyhow::Result<()> {
             current_block += 1;
         }
 
-        // If we are caught up, wait for the next block
         if current_block > current_tip {
             println!("Caught up to tip ({}), waiting for next block...", current_tip);
             sleep(Duration::from_secs(20)).await;
