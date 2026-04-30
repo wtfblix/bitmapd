@@ -10,7 +10,7 @@ use tokio::time::{sleep, Duration};
 
 const GENESIS_BITMAP_BLOCKHEIGHT: u64 = 792435;
 const ORD_BASE_URL: &str = "http://127.0.0.1:8080";
-const DB_PATH: &str = "/home/makfella/bitmapd/resolver.db";
+const DB_PATH: &str = "resolver.db";
 
 #[derive(Parser)]
 #[command(name = "bitmapd")]
