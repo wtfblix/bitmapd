@@ -45,6 +45,16 @@ async fn run_indexer() -> anyhow::Result<()> {
     println!("Genesis bitmap blockheight: {}", GENESIS_BITMAP_BLOCKHEIGHT);
 
     loop {
+        // Fetch the REAL current tip from ord before processing each block
+        let current_tip = match client.get_block_height().await {
+            Ok(tip) => tip,
+            Err(err) => {
+                println!("Could not fetch current tip, retrying in 20s: {}", err);
+                sleep(Duration::from_secs(20)).await;
+                continue;
+            }
+        };
+
         let mut current_block = db.get_last_block()?;
 
         if current_block < GENESIS_BITMAP_BLOCKHEIGHT {
@@ -53,9 +63,16 @@ async fn run_indexer() -> anyhow::Result<()> {
             current_block += 1;
         }
 
-        match processor.process_block(current_block, 9_999_999).await {
+        // If we are caught up, wait for the next block
+        if current_block > current_tip {
+            println!("Caught up to tip ({}), waiting for next block...", current_tip);
+            sleep(Duration::from_secs(20)).await;
+            continue;
+        }
+
+        match processor.process_block(current_block, current_block).await {
             Ok(_) => {
-                println!("Block {} processed", current_block);
+                println!("Block {} processed (tip: {})", current_block, current_tip);
             }
             Err(err) => {
                 println!(

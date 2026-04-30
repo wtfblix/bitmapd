@@ -9,27 +9,30 @@ pub enum ValidationResult {
 pub struct Validator;
 
 impl Validator {
-    /// Validates a District claim against block availability
-    pub fn validate_district(number: u64, current_tip: u64) -> ValidationResult {
-        if number > current_tip {
+    /// Validates a District claim against the block currently being scanned
+    pub fn validate_district(number: u64, scan_block: u64) -> ValidationResult {
+        if number > scan_block {
             return ValidationResult::Invalid(format!(
-                "District {} references a future block (Tip: {})",
-                number, current_tip
+                "District {} references a future block (Scan block: {})",
+                number, scan_block
             ));
         }
         ValidationResult::Valid
     }
 
-    /// Validates a Parcel claim against block height and transaction count
+    /// Validates a Parcel claim against the block currently being scanned
     pub fn validate_parcel(
-        tx_index: u64, 
-        block_number: u64, 
-        current_tip: u64, 
+        tx_index: u64,
+        block_number: u64,
+        scan_block: u64,
         block_data: &Value
     ) -> ValidationResult {
-        // 1. Check if block exists
-        if block_number > current_tip {
-            return ValidationResult::Invalid(format!("Parcel references future block {}", block_number));
+        // 1. Check if the claimed block existed at scan time
+        if block_number > scan_block {
+            return ValidationResult::Invalid(format!(
+                "Parcel references future block {} (Scan block: {})",
+                block_number, scan_block
+            ));
         }
 
         // 2. Check if tx_index is valid for that block
@@ -41,7 +44,10 @@ impl Validator {
                 ));
             }
         } else {
-            return ValidationResult::Invalid(format!("Could not verify transactions for block {}", block_number));
+            return ValidationResult::Invalid(format!(
+                "Could not verify transactions for block {}",
+                block_number
+            ));
         }
 
         ValidationResult::Valid

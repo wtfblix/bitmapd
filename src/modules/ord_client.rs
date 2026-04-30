@@ -42,6 +42,21 @@ impl OrdClient {
         Ok(resp.text().await?)
     }
 
+    /// Fetches the current block height from ord
+    pub async fn get_block_height(&self) -> Result<u64> {
+        let url = format!("{}/blockheight", self.base_url);
+        let resp = self.client.get(&url)
+            .send()
+            .await
+            .context("Failed to fetch block height")?
+            .error_for_status()
+            .context("Block height request returned error status")?;
+
+        let text = resp.text().await.context("Failed to read block height response")?;
+        let height = text.trim().parse::<u64>().context("Failed to parse block height")?;
+        Ok(height)
+    }
+
     async fn get_json(&self, url: &str) -> Result<Value> {
         let resp = self.client.get(url)
             .header("Accept", "application/json")

@@ -14,7 +14,7 @@ impl<'a> BlockProcessor<'a> {
         Self { client, db }
     }
 
-    pub async fn process_block(&self, height: u64, current_tip: u64) -> Result<()> {
+    pub async fn process_block(&self, height: u64, scan_block: u64) -> Result<()> {
         println!("--- Processing Block {} ---", height);
 
         // 1. Fetch Block Data
@@ -24,6 +24,7 @@ impl<'a> BlockProcessor<'a> {
             Some(i) => i,
             None => {
                 println!("No inscriptions in block {}. Skipping.", height);
+                self.db.set_last_block(height)?;
                 return Ok(());
             }
         };
@@ -38,8 +39,8 @@ impl<'a> BlockProcessor<'a> {
                     // 4. Parse
                     match Parser::parse(&raw_content) {
                         BitmapClaim::District { number } => {
-                            // 5. Validate District
-                            match Validator::validate_district(number, current_tip) {
+                            // 5. Validate District against the block being scanned
+                            match Validator::validate_district(number, scan_block) {
                                 ValidationResult::Valid => {
                                     // 6. Save to DB (First claim wins logic in DB)
                                     if self.db.save_district(number, id, height)? {
@@ -54,11 +55,9 @@ impl<'a> BlockProcessor<'a> {
                             }
                         },
                         BitmapClaim::Parcel { tx_index, block_number } => {
-                            // We will implement Parcel validation + Parent checks in the next iteration
-                            // For now, we focus on nailing Districts
-                            // println!("📦 Parcel claim found: {}.{}.bitmap", tx_index, block_number);
+                            // Parcel validation coming next iteration
                         },
-                        BitmapClaim::Invalid => {} // Skip noise
+                        BitmapClaim::Invalid => {}
                     }
                 }
             }
