@@ -10,6 +10,6 @@ Bitmap Resolver Daemon, a deterministic indexer for the Bitmap protocol on Bitco
 ## Install
 
 ```bash
-wget https://github.com/wtfblix/bitmapd/releases/download/v0.1.1/bitmapd-linux-amd64
+wget https://github.com/wtfblix/bitmapd/releases/download/v0.1.4/bitmapd-linux-amd64
 chmod +x bitmapd-linux-amd64
 sudo mv bitmapd-linux-amd64 /usr/local/bin/bitmapd
