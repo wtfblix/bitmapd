@@ -1,6 +1,6 @@
 [package]
 name = "bitmapd"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
@@ -10,9 +10,6 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
-tracing = "0.1"
-tracing-subscriber = "0.3"
-regex = "1"
-lazy_static = "1"
 clap = { version = "4", features = ["derive"] }
 axum = "0.7"
+futures = "0.3"

@@ -25,7 +25,7 @@ impl Validator {
         tx_index: u64,
         block_number: u64,
         scan_block: u64,
-        block_data: &Value
+        target_block_data: &Value
     ) -> ValidationResult {
         // 1. Check if the claimed block existed at scan time
         if block_number > scan_block {
@@ -35,17 +35,18 @@ impl Validator {
             ));
         }
 
-        // 2. Check if tx_index is valid for that block
-        if let Some(target_block_txs) = block_data["transactions"].as_array() {
-            if tx_index >= target_block_txs.len() as u64 {
+        // 2. Check if tx_index is valid for that target block
+        // Note: target_block_data must be the data for 'block_number', not 'scan_block'
+        if let Some(transactions) = target_block_data["transactions"].as_array() {
+            if tx_index >= transactions.len() as u64 {
                 return ValidationResult::Invalid(format!(
                     "TX Index {} out of range for block {} (Max: {})",
-                    tx_index, block_number, target_block_txs.len() - 1
+                    tx_index, block_number, transactions.len().saturating_sub(1)
                 ));
             }
         } else {
             return ValidationResult::Invalid(format!(
-                "Could not verify transactions for block {}",
+                "Required block data for {} is missing transactions",
                 block_number
             ));
         }

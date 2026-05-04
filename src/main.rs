@@ -64,6 +64,7 @@ async fn run_indexer() -> anyhow::Result<()> {
 
         let mut current_block = db.get_last_block()?;
 
+        // Start from genesis if the DB is empty
         if current_block < GENESIS_BITMAP_BLOCKHEIGHT {
             current_block = GENESIS_BITMAP_BLOCKHEIGHT;
         } else {
@@ -76,13 +77,14 @@ async fn run_indexer() -> anyhow::Result<()> {
             continue;
         }
 
+        // Processing scan_block as current_block to match validation requirements
         match processor.process_block(current_block, current_block).await {
             Ok(_) => {
                 println!("Block {} processed (tip: {})", current_block, current_tip);
             }
             Err(err) => {
                 println!(
-                    "Waiting for next block or ord may be behind, block {}, error: {}",
+                    "Error processing block {}, retrying in 20s: {}",
                     current_block, err
                 );
                 sleep(Duration::from_secs(20)).await;
