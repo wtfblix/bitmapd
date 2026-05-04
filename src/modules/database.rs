@@ -21,7 +21,7 @@ impl Database {
 
             CREATE TABLE IF NOT EXISTS districts (
                 number INTEGER PRIMARY KEY,
-                inscription_id TEXT,
+                inscription_id TEXT UNIQUE,
                 block_height INTEGER
             );
 
@@ -34,6 +34,7 @@ impl Database {
             );
 
             CREATE INDEX IF NOT EXISTS idx_parcels_district ON parcels(parent_district_number);
+            CREATE INDEX IF NOT EXISTS idx_districts_inscription ON districts(inscription_id);
         ")?;
 
         Ok(Self { conn: Mutex::new(conn) })
@@ -72,13 +73,30 @@ impl Database {
 
     pub fn save_parcel(&self, tx_index: u64, block_num: u64, id: &str, district_num: u64) -> Result<bool> {
         let conn = self.conn.lock().unwrap();
-        // composite_id format: "tx.block" ensures first-valid-claim-wins per parcel
         let composite_id = format!("{}.{}", tx_index, block_num);
+
         let rows = conn.execute(
-            "INSERT OR IGNORE INTO parcels (composite_id, tx_index, block_number, inscription_id, parent_district_number) VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT OR IGNORE INTO parcels (composite_id, tx_index, block_number, inscription_id, parent_district_number)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
             params![composite_id, tx_index, block_num, id, district_num],
         )?;
+
         Ok(rows > 0)
+    }
+
+    pub fn get_district_by_inscription(&self, inscription_id: &str) -> Result<Option<u64>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT number FROM districts WHERE inscription_id = ?1"
+        )?;
+
+        let mut rows = stmt.query([inscription_id])?;
+
+        if let Some(row) = rows.next()? {
+            Ok(Some(row.get(0)?))
+        } else {
+            Ok(None)
+        }
     }
 
     pub fn get_district(&self, number: u64) -> Result<Option<String>> {
@@ -97,13 +115,16 @@ impl Database {
         let mut stmt = conn.prepare(
             "SELECT tx_index, inscription_id FROM parcels WHERE parent_district_number = ?1 ORDER BY block_number ASC, tx_index ASC"
         )?;
+
         let rows = stmt.query_map(params![district], |row| {
             Ok((row.get::<_, u64>(0)?, row.get::<_, String>(1)?))
         })?;
+
         let mut parcels = Vec::new();
         for row in rows {
             parcels.push(row?);
         }
+
         Ok(parcels)
     }
 }
